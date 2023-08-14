@@ -1,0 +1,260 @@
+#!/bin/awk -f
+BEGIN {
+	insns["adc"] = "";
+	insns["add"] = "";
+	insns["and"] = "";
+	insns["b"] = "";
+	insns["bic"] = "";
+	insns["bkpt"] = "";
+	insns["bl"] = "";
+	insns["blx_1"] = "";
+	insns["blx_2"] = "";
+	insns["bx"] = "";
+	insns["bxj"] = "";
+	insns["cdp"] = "";
+	insns["cdp2"] = "";
+	insns["clz"] = "";
+	insns["cmn"] = "";
+	insns["cmp"] = "";
+	insns["cps"] = "";
+	insns["cpy"] = "";
+	insns["eor"] = "";
+	insns["ldc"] = "";
+	insns["ldc2"] = "";
+	insns["ldm_1"] = "";
+	insns["ldm_2"] = "";
+	insns["ldm_3"] = "";
+	insns["ldr"] = "";
+	insns["ldrb"] = "";
+	insns["ldrd"] = "";
+	insns["ldrbt"] = "";
+	insns["ldrex"] = "";
+	insns["ldrh"] = "";
+	insns["ldrsb"] = "";
+	insns["ldrsh"] = "";
+	insns["ldrt"] = "";
+	insns["mcr"] = "";
+	insns["mcr2"] = "";
+	insns["mcrr"] = "";
+	insns["mcrr2"] = "";
+	insns["mla"] = "";
+	insns["mov"] = "<cond>:0-4:0;b00::X;<shifter_operand>:12-13:5;b1101::X;S:0-1:1;b0000::X;<Rd>:0-4:4;<shifter_operand>:0-12:5";
+	insns["mrc"] = "";
+	insns["mcr2"] = "";
+	insns["mrrc"] = "";
+	insns["mrrc2"] = "";
+	insns["mrs"] = "";
+	insns["msr"] = "";
+	insns["mul"] = "";
+	insns["mvn"] = "";
+	insns["orr"] = "";
+	insns["pkhbt"] = "";
+	insns["pkhtb"] = "";
+	insns["pld"] = "";
+	insns["qadd"] = "";
+	insns["qadd16"] = "";
+	insns["qadd8"] = "";
+	insns["qaddsubx"] = "";
+	insns["qdadd"] = "";
+	insns["qdsub"] = "";
+	insns["qsub"] = "";
+	insns["qsub16"] = "";
+	insns["qsub8"] = "";
+	insns["qsubaddx"] = "";
+	insns["rev"] = "";
+	insns["rev16"] = "";
+	insns["revsh"] = "";
+	insns["rfe"] = "";
+	insns["rsb"] = "";
+	insns["rsc"] = "";
+	insns["sadd16"] = "";
+	insns["sadd8"] = "";
+	insns["saddsubx"] = "";
+	insns["sbc"] = "";
+	insns["sel"] = "";
+	insns["setend"] = "";
+	insns["shadd16"] = "";
+	insns["shadd8"] = "";
+	insns["shaddsubx"] = "";
+	insns["shsub16"] = "";
+	insns["shsub8"] = "";
+	insns["shsubaddx"] = "";
+	insns["smlad"] = "";
+	insns["smlal"] = "";
+	insns["smlald"] = "";
+	insns["smlabb"] = "";
+	insns["smlabt"] = "";
+	insns["smlatb"] = "";
+	insns["smlatt"] = "";
+	insns["smlalbb"] = "";
+	insns["smlalbt"] = "";
+	insns["smlaltb"] = "";
+	insns["smlaltt"] = "";
+	insns["smlawb"] = "";
+	insns["smlawt"] = "";
+	insns["smlsd"] = "";
+	insns["smlsld"] = "";
+	insns["smmla"] = "";
+	insns["smmls"] = "";
+	insns["smmul"] = "";
+	insns["smuad"] = "";
+	insns["smull"] = "";
+	insns["smul"] = "";
+	insns["smulbb"] = "";
+	insns["smulbt"] = "";
+	insns["smultb"] = "";
+	insns["smultt"] = "";
+	insns["smulwb"] = "";
+	insns["smulwt"] = "";
+	insns["smusd"] = "";
+	insns["srs"] = "";
+	insns["ssat"] = "";
+	insns["ssat16"] = "";
+	insns["ssub16"] = "";
+	insns["ssub8"] = "";
+	insns["ssubaddx"] = "";
+	insns["stc"] = "";
+	insns["stc2"] = "";
+	insns["stm_1"] = "";
+	insns["stm_2"] = "";
+	insns["str"] = "";
+	insns["strb"] = "";
+	insns["strbt"] = "";
+	insns["strd"] = "";
+	insns["strex"] = "";
+	insns["strh"] = "";
+	insns["strt"] = "";
+	insns["sub"] = "";
+	insns["swi"] = "";
+	insns["swp"] = "";
+	insns["swpb"] = "";
+	insns["sxtab"] = "";
+	insns["sxtab16"] = "";
+	insns["sxtah"] = "";
+	insns["sxtb"] = "";
+	insns["sxtb16"] = "";
+	insns["sxth"] = "";
+	insns["teq"] = "";
+	insns["tst"] = "";
+	insns["uadd16"] = "";
+	insns["uadd8"] = "";
+	insns["uaddsubx"] = "";
+	insns["uhadd16"] = "";
+	insns["uhadd8"] = "";
+	insns["uhaddsubx"] = "";
+	insns["umaal"] = "b11111111";
+	insns["umlal"] = "";
+	insns["umull"] = "";
+	insns["uqadd16"] = "";
+	insns["uqadd8"] = "";
+	insns["uqaddsubx"] = "";
+	insns["uqsub16"] = "";
+	insns["uqsub8"] = "";
+	insns["uqsubaddx"] = "";
+	insns["usad8"] = "";
+	insns["usada8"] = "";
+	insns["usat"] = "";
+	insns["usat16"] = "";
+	insns["usub16"] = "";
+	insns["usub8"] = "";
+	insns["usubaddx"] = "";
+	insns["uxtab"] = "";
+	insns["uxtab16"] = "";
+	insns["uxtah"] = "";
+	insns["uxtb"] = "";
+	insns["uxtb16"] = "";
+	insns["uxth"] = "";
+	forms["<shifter_operand>"] = 1;
+	forms["S"] = 2;
+	forms["<Rd>"] = 3;
+	forms["<cond>"] = 4;
+}
+NF {
+	for (a = $1; a; a = substr(a, 1, length(a) - 1)) {
+		if (a in insns) {
+			break;
+		}
+	}
+	if (!a) {
+		exit(1);
+	}
+	if (!(insns[a])) {
+		exit(1);
+	}
+	split(insns[a], b, ";");
+	d = $1;
+	split("", e);
+	split("", h);
+	for (pos in b) {
+		lex = substr(b[pos], length(b[pos]), 1);
+		if (lex in e) {
+			h[pos] = b[pos];
+		}
+		else {
+			e[lex] = b[pos] ":" pos;
+		}
+	}
+	startform = substr($1, length(a) + 1);
+	for (lex = 0; 1; lex++) {
+		if (lex == 10) {
+			if ("X" in e) {
+				lex = "X";
+				pos = substr(e[lex], length(e[lex]), 1);
+				if (substr(e[lex], 1, 1) == "b") {
+					b[pos] = substr(e[lex], 2, length(e[lex]) - 6);
+					break;
+				}
+				else {
+					exit(105);
+				}
+			}
+			break;
+		}
+		if (!(lex in e)) {
+			continue;
+		}
+		pos = substr(e[lex], length(e[lex]), 1);
+		split(e[lex], g, ":");
+		b[pos] = "0101010101010101010101010101010101";#TODO implement
+	}
+	for (pos in h) {
+		if (substr(h[pos], 1, 1) == "b") {
+			b[pos] = substr(h[pos], 2, length(h[pos]) - 4);
+			continue;
+		}
+		lex = substr(h[pos], length(h[pos]), 1);
+		split(h[pos], y, ":");
+		if (!(3 in y)) {
+			exit(101);
+		}
+		t1 = y[2];
+		split(t1, y, "-");
+		if (!(2 in y)) {
+			exit(102);
+		}
+		seq = b[substr(e[lex], length(e[lex]), 1)];
+		b[pos] = substr(seq, length(seq) + 1 - (y[2] - y[1]) - y[1], y[2] - y[1]);
+	}
+	for (lex in e) {
+		if (substr(e[lex], 1, 1) == "b") {
+			continue;
+		}
+		seq = b[pos = substr(e[lex], length(e[lex]), 1)];
+		split(e[lex], y, ":");
+		if (!(4 in y)) {
+			exit(103);
+		}
+		t1 = y[2];
+		split(t1, y, "-");
+		if (!(2 in y)) {
+			exit(104);
+		}
+		b[pos] = substr(seq, length(seq) + 1 - (y[2] - y[1]) - y[1], y[2] - y[1]);
+	}
+	c = "";
+	pos = 0;
+	while ((++pos) in b) {
+		c = c b[pos];
+	}
+	print(c);
+}

@@ -1,0 +1,50 @@
+#!/bin/awk -f
+END {
+	if (comment) {
+		exit(1);
+	}
+	else {
+		exit(0);
+	}
+}
+{
+	if (comment) {
+		if (a = index($0, "*/")) {
+			$0 = substr($0, a + 2);
+		}
+		else {
+			next;
+		}
+	}
+	else {
+		cmt = "";
+	}
+	c2 = comment;
+	comment = 0;
+	while (a = index($0, "/*")) {
+		if (b = index(substr($0, a + 2), "*/")) {
+			$0 = substr($0, 1, a - 1) substr($0, a + b + 3);
+		}
+		else {
+			$0 = substr($0, 1, a - 1);
+			comment = 1;
+			break;
+		}
+	}
+	if (comment) {
+		if (c2) {
+			cmt = cmt $0;
+		}
+		else {
+			cmt = $0;
+		}
+	}
+	else {
+		if (c2) {
+			print(cmt $0);
+		}
+		else {
+			print($0);
+		}
+	}
+}
