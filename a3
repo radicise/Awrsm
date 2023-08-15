@@ -185,6 +185,12 @@ BEGIN {
 	conds["GT"] = "1100";
 	conds["LE"] = "1101";
 	conds["AL"] = "1110";
+	hexAlphas["A"] = 10;
+	hexAlphas["B"] = 11;
+	hexAlphas["C"] = 12;
+	hexAlphas["D"] = 13;
+	hexAlphas["E"] = 14;
+	hexAlphas["F"] = 15;
 }
 NF {
 	for (a = $1; a; a = substr(a, 1, length(a) - 1)) {
@@ -203,8 +209,12 @@ NF {
 	form = substr($0, length(a) + 1);
 	split("", e);
 	split("", h);
+	lexNum = 0;
 	for (pos in b) {
 		lex = substr(b[pos], length(b[pos]), 1);
+		if ((lex - 3) > lexNum) {
+			lexNum = lex - 3;
+		}
 		if (lex in e) {
 			h[pos] = b[pos];
 		}
@@ -285,7 +295,18 @@ function parseForm(insn, fieldDef) {
 		if (NF < (p1[3] - 3)) {
 			exit(1);
 		}
-		n1 = $(p1[3] - 3);
+		if ((p1[3] - 3) == lexNum) {
+			n1 = $(lexNum);
+			for (n2 = lexNum + 1; n2 <= NF; n2++) {
+				n1 = n1 "," $(n2);
+			}
+		}
+		else if ((p1[3] - 3) < lexNum) {
+			n1 = $(p1[3] - 3);
+		}
+		else {
+			exit(107);
+		}
 		FS = " ";
 		$0 = n1;
 		$1 = $1;#TODO Is this necessary?
@@ -296,7 +317,17 @@ function parseForm(insn, fieldDef) {
 	}
 	n1 = forms[p1[1]];
 	if (n1 == 1) {
-		return "0000000000000000000000000000000000";#TODO implement
+		if (substr(txt, 1, 1) == "#") {
+			nImm = getImm(txt, 2);
+			exit(99);
+			return "0000000000000000000000000";#TODO implement
+		}
+		n2 = asBin(getReg(txt, 1), 4);
+		if (txt ~ /,/) {
+			exit(99);
+			return "00000000000000000000000"#TODO implement
+		}
+		return "000000000" n2;
 	}
 	else if (n1 == 2) {
 		if (asUpper(substr(form, 1, 1)) == "S") {
@@ -306,17 +337,7 @@ function parseForm(insn, fieldDef) {
 		return "0";
 	}
 	else if (n1 == 3) {
-		txt = asUpper(txt);
-		if (!(substr(txt, 1, 1) == "R")) {
-			exit(1);
-		}
-		if ((n2 = int(substr(txt, 2) + 0)) < 0) {#TODO is the addition of zero necessary?
-			exit(1);
-		}
-		if (n2 >= 16) {
-			exit(1);
-		}
-		return asBin(n2, 4);
+		return asBin(getReg(txt, 1), 4);
 	}
 	else if (n1 == 4) {
 		if ((n2 = asUpper(substr(form, 1, 2))) in conds) {
@@ -333,10 +354,58 @@ function asUpper(s) {
 	return toupper(s);
 }
 function asBin(a, b) {
+	a = int(a + 0);#TODO Is the addition of zero necessary?
 	binRes = "";
 	for (; b != 0; b--) {
 		binRes = (a % 2) binRes;
 		a = int(a / 2);
 	}
 	return binRes;
+}
+function getImm(strImm, place) {
+	if ((immDig = substr(strImm, place, 1)) == 0) {
+		if (asUpper(immDig = substr(strImm, ++place, 1)) == "X") {
+			immRes = 0;
+			while ((immDig = asUpper(substr(strImm, ++place, 1))) ~ /[0123456789ABCDEF]/) {
+				immRes = (immRes * 16) + ((immDig ~ /[ABCDEF]/) ? (hexAlphas[immDig]) : (immDig));
+			}
+			return immRes;
+		}
+		else if (immDig ~ /[01234567]/) {
+			immRes = immDig + 0;
+			while ((immDig = substr(strImm, ++place, 1)) ~ /[01234567]/) {
+				immRes = (immRes * 8) + immDig;
+			}
+			return immRes;
+		}
+		else if (asUpper(immDig) == "B") {
+			immRes = 0;
+			while ((immDig = substr(strImm, ++place, 1)) ~ /[01]/) {
+				immRes = (immRes * 2) + immDig;
+			}
+			return immRes;
+		}
+		else {
+			return 0;
+		}
+	}
+	else if (immDig ~ /[123456789]/) {
+		immRes = immDig + 0;
+		while ((immDig = substr(strImm, ++place, 1)) ~ /[0123456789]/) {
+			immRes = (immRes * 10) + immDig;
+		}
+		return immRes;
+	}
+}
+function getReg(strReg, place) {
+		if (!(asUpper(substr(strReg, place, 1)) == "R")) {
+			exit(1);
+		}
+		if ((reg2 = getImm(txt, place + 1)) < 0) {
+			exit(1);
+		}
+		if (reg2 >= 16) {
+			exit(1);
+		}
+		return reg2;
 }
