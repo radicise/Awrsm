@@ -191,6 +191,10 @@ BEGIN {
 	hexAlphas["D"] = 13;
 	hexAlphas["E"] = 14;
 	hexAlphas["F"] = 15;
+	shifters["LSL"] = 0;
+	shifters["LSR"] = 1;
+	shifters["ASR"] = 2;
+	shifters["ROR"] = 3;
 }
 NF {
 	for (a = $1; a; a = substr(a, 1, length(a) - 1)) {
@@ -318,14 +322,88 @@ function parseForm(insn, fieldDef) {
 	n1 = forms[p1[1]];
 	if (n1 == 1) {
 		if (substr(txt, 1, 1) == "#") {
-			nImm = getImm(txt, 2);
-			exit(99);
-			return "0000000000000000000000000";#TODO implement
+			nImm = asBin(getImm(txt, 2), 32);
+			for (n2 = 1; n2 < 33; n2++) {
+				if (substr(nImm, n2, 1) == "1") {
+					break;
+				}
+			}
+			n2--;
+			for (n3 = 32; n3 >= 1; n3--) {
+				if (substr(nImm, n3, 1) == "1") {
+					break;
+				}
+			}
+			n3 = 32 - n3;
+			n4 = (32 - n2) - n3;
+			if (n4 == 8) {
+				if (n3 % 2) {
+					exit(1);
+				}
+				nRot = ((n2 / 2) + 4) % 16;
+				nPatt = substr(nImm, n2 + 1, 8);
+			}
+			else if (n4 < 8) {
+				if (n2 % 2) {
+					n2 -= 1;
+					n4 += 1;
+				}
+				nRot = ((n2 / 2) + 4) % 16;
+				nPatt = substr(nImm, n2 + 1, 8);
+			}
+			else {
+				nImt = substr(nImm, 17, 16) substr(nImm, 1, 16);
+				for (n2 = 1; n2 < 33; n2++) {
+					if (substr(nImt, n2, 1) == "1") {
+						break;
+					}
+				}
+				n2--;
+				for (n3 = 32; n3 >= 1; n3--) {
+					if (substr(nImt, n3, 1) == "1") {
+						break;
+					}
+				}
+				n3 = 32 - n3;
+				n4 = (32 - n2) - n3;
+				if (n4 == 8) {
+					if (n3 % 2) {
+						exit(1);
+					}
+					nRot = ((n2 / 2) + 12) % 16;
+					nPatt = substr(nImt, n2 + 1, 8);
+				}
+				else if (n4 < 8) {
+					if (n2 % 2) {
+						n2 -= 1;
+						n4 += 1;
+					}
+					nRot = ((n2 / 2) + 12) % 16;
+					nPatt = substr(nImm, n2 + 1, 8);
+				}
+				else {
+					exit(1);
+				}
+			}
+			return "1" asBin(nRot, 4) nPatt;
 		}
 		n2 = asBin(getReg(txt, 1), 4);
-		if (txt ~ /,/) {
-			exit(99);
-			return "00000000000000000000000"#TODO implement
+		if (n3 = match(txt, ",")) {
+			txt = substr(txt, n3 + 1);
+			$0 = txt;
+			$1 = $1;#TODO Is this necessary?
+			txt = $0;
+			if ((n3 = asUpper(substr(txt, 1, 3))) == "RRX") {
+				return "000000110" n2;
+			}
+			if (n3 in shifters) {
+				txt = substr(txt, 5);
+				if (substr(txt, 1, 1) == "#") {
+					return "0" asBin(getImm(txt, 2), 5) asBin(shifters[n3], 2) "0" n2;
+				}
+				return "0" asBin(getReg(txt, 1), 4) "0" asBin(shifters[n3], 2) "1" n2;
+			}
+			exit(1);
 		}
 		return "000000000" n2;
 	}
@@ -355,47 +433,60 @@ function asUpper(s) {
 }
 function asBin(a, b) {
 	a = int(a + 0);#TODO Is the addition of zero necessary?
+	if (a < 0) {
+		a = (-a - 1);
+		binNeg = 1;
+	}
+	else {
+		binNeg = 0;
+	}
 	binRes = "";
 	for (; b != 0; b--) {
-		binRes = (a % 2) binRes;
+		binRes = (binNeg ? ((a + 1) % 2) : (a % 2)) binRes;
 		a = int(a / 2);
 	}
 	return binRes;
 }
 function getImm(strImm, place) {
-	if ((immDig = substr(strImm, place, 1)) == 0) {
+	if (substr(strImm, place, 1) == "-") {
+		immNeg = 1;
+		place += 1;
+	}
+	else {
+		immNeg = 0;
+	}
+	if ((immDig = substr(strImm, place, 1)) == "0") {
 		if (asUpper(immDig = substr(strImm, ++place, 1)) == "X") {
 			immRes = 0;
 			while ((immDig = asUpper(substr(strImm, ++place, 1))) ~ /[0123456789ABCDEF]/) {
 				immRes = (immRes * 16) + ((immDig ~ /[ABCDEF]/) ? (hexAlphas[immDig]) : (immDig));
 			}
-			return immRes;
+			return (immNeg ? (-immRes) : (immRes));
 		}
 		else if (immDig ~ /[01234567]/) {
 			immRes = immDig + 0;
 			while ((immDig = substr(strImm, ++place, 1)) ~ /[01234567]/) {
 				immRes = (immRes * 8) + immDig;
 			}
-			return immRes;
+			return (immNeg ? (-immRes) : (immRes));
 		}
 		else if (asUpper(immDig) == "B") {
 			immRes = 0;
 			while ((immDig = substr(strImm, ++place, 1)) ~ /[01]/) {
 				immRes = (immRes * 2) + immDig;
 			}
-			return immRes;
+			return (immNeg ? (-immRes) : (immRes));
 		}
-		else {
-			return 0;
-		}
+		return 0;
 	}
 	else if (immDig ~ /[123456789]/) {
 		immRes = immDig + 0;
 		while ((immDig = substr(strImm, ++place, 1)) ~ /[0123456789]/) {
 			immRes = (immRes * 10) + immDig;
 		}
-		return immRes;
+		return (immNeg ? (-immRes) : (immRes));
 	}
+	exit(1);
 }
 function getReg(strReg, place) {
 		if (!(asUpper(substr(strReg, place, 1)) == "R")) {
