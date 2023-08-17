@@ -1,8 +1,8 @@
 #!/bin/awk -f
 BEGIN {
-	insns["ADC"] = "";
-	insns["ADD"] = "";
-	insns["AND"] = "";
+	insns["ADC"] = "cond:0-4:0;b00::X;shifter_operand:12-13:6;b0101::X;S:0-1:1;Rg:0-4:5;Rg:0-4:4;shifter_operand:0-12:6";
+	insns["ADD"] = "cond:0-4:0;b00::X;shifter_operand:12-13:6;b0100::X;S:0-1:1;Rg:0-4:5;Rg:0-4:4;shifter_operand:0-12:6";
+	insns["AND"] = "cond:0-4:0;b00::X;shifter_operand:12-13:6;b0000::X;S:0-1:1;Rg:0-4:5;Rg:0-4:4;shifter_operand:0-12:6";
 	insns["B"] = "";
 	insns["BIC"] = "";
 	insns["BKPT"] = "";
@@ -38,7 +38,7 @@ BEGIN {
 	insns["MCRR"] = "";
 	insns["MCRR2"] = "";
 	insns["MLA"] = "";
-	insns["MOV"] = "cond:0-4:0;b00::X;shifter_operand:12-13:5;b1101::X;S:0-1:1;b0000::X;Rd:0-4:4;shifter_operand:0-12:5";
+	insns["MOV"] = "cond:0-4:0;b00::X;shifter_operand:12-13:5;b1101::X;S:0-1:1;b0000::X;Rg:0-4:4;shifter_operand:0-12:5";
 	insns["MRC"] = "";
 	insns["MCR2"] = "";
 	insns["MRRC"] = "";
@@ -166,7 +166,7 @@ BEGIN {
 	insns["UXTH"] = "";
 	forms["shifter_operand"] = 1;
 	forms["S"] = 2;
-	forms["Rd"] = 3;
+	forms["Rg"] = 3;
 	forms["cond"] = 4;
 	conds["EQ"] = "0000";
 	conds["NE"] = "0001";
@@ -195,6 +195,24 @@ BEGIN {
 	shifters["LSR"] = 1;
 	shifters["ASR"] = 2;
 	shifters["ROR"] = 3;
+	binHex["0000"] = "0";
+	binHex["0001"] = "1";
+	binHex["0010"] = "2";
+	binHex["0011"] = "3";
+	binHex["0100"] = "4";
+	binHex["0101"] = "5";
+	binHex["0110"] = "6";
+	binHex["0111"] = "7";
+	binHex["1000"] = "8";
+	binHex["1001"] = "9";
+	binHex["1010"] = "a";
+	binHex["1011"] = "b";
+	binHex["1100"] = "c";
+	binHex["1101"] = "d";
+	binHex["1110"] = "e";
+	binHex["1111"] = "f";
+	insnEndianness = 0;
+	counter = 0;#TODO Allow specification of the starting address
 }
 NF {
 	for (a = $1; a; a = substr(a, 1, length(a) - 1)) {
@@ -285,7 +303,25 @@ NF {
 	while ((++pos) in b) {
 		c = c b[pos];
 	}
-	print(c);
+	if (length(c) % 8) {
+		exit(109);
+	}
+	insnSiz = length(c) / 8;
+	d = "";
+	if (insnEndianness) {
+		for (pos = 0; pos < insnSiz; pos++) {
+			d = d " " binHex[substr(c, (pos * 8) + 1, 4)] binHex[substr(c, (pos * 8) + 5, 4)];
+		}
+		d = substr(d, 2);
+	}
+	else {
+		for (pos = 0; pos < insnSiz; pos++) {
+			d = binHex[substr(c, (pos * 8) + 1, 4)] binHex[substr(c, (pos * 8) + 5, 4)] " " d;
+		}
+		d = substr(d, 1, length(d) - 1);
+	}
+	print(d);
+	counter += insnSiz;
 }
 function parseForm(insn, fieldDef) {
 	split(fieldDef, p1, ":");
@@ -349,7 +385,7 @@ function parseForm(insn, fieldDef) {
 					n4 += 1;
 				}
 				nRot = ((n2 / 2) + 4) % 16;
-				nPatt = substr(nImm, n2 + 1, 8);
+				nPatt = substr(nImm nImm, n2 + 1, 8);
 			}
 			else {
 				nImt = substr(nImm, 17, 16) substr(nImm, 1, 16);
@@ -379,7 +415,7 @@ function parseForm(insn, fieldDef) {
 						n4 += 1;
 					}
 					nRot = ((n2 / 2) + 12) % 16;
-					nPatt = substr(nImm, n2 + 1, 8);
+					nPatt = substr(nImt, n2 + 1, 8);
 				}
 				else {
 					exit(1);
@@ -448,11 +484,14 @@ function asBin(a, b) {
 	return binRes;
 }
 function getImm(strImm, place) {
-	if (substr(strImm, place, 1) == "-") {
+	if ((immDig = substr(strImm, place, 1)) == "-") {
 		immNeg = 1;
-		place += 1;
+		place++;
 	}
 	else {
+		if (immDig == "+") {
+			place++;
+		}
 		immNeg = 0;
 	}
 	if ((immDig = substr(strImm, place, 1)) == "0") {
