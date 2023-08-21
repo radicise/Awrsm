@@ -4,27 +4,27 @@ BEGIN {
 	insns["ADD"] = "cond:0-4:0;b00::X;shifter_operand:12-13:6;b0100::X;S:0-1:1;Rg:0-4:5;Rg:0-4:4;shifter_operand:0-12:6";
 	insns["AND"] = "cond:0-4:0;b00::X;shifter_operand:12-13:6;b0000::X;S:0-1:1;Rg:0-4:5;Rg:0-4:4;shifter_operand:0-12:6";
 	insns["B"] = "";
-	insns["BIC"] = "";
-	insns["BKPT"] = "";
+	insns["BIC"] = "cond:0-4:0;b00::X;shifter_operand:12-13:6;b1110::X;S:0-1:1;Rg:0-4:5;Rg:0-4:4;shifter_operand:0-12:6";
+	insns["BKPT"] = "b111000010010::X;imm:4-16:4;b0111::X;imm:0-4:4";
 	insns["BL"] = "";
-	insns["BLX_1"] = "";
-	insns["BLX_2"] = "";
-	insns["BX"] = "";
-	insns["BXJ"] = "";
+	insns["BLX_1"] = "";#TODO fix
+	insns["BLX_2"] = "";#TODO fix
+	insns["BX"] = "cond:0-4:0;b000100101111111111110001::X;Rg:0-4:4";
+	insns["BXJ"] = "cond:0-4:0;b000100101111111111110010::X;Rg:0-4:4";
 	insns["CDP"] = "";
 	insns["CDP2"] = "";
 	insns["CLZ"] = "";
 	insns["CMN"] = "";
 	insns["CMP"] = "";
 	insns["CPS"] = "";
-	insns["CPY"] = "";
+	insns["CPY"] = "cond:0-4:0;b000110100000::X;Rg:0-4:4;b00000000::X;Rg:0-4:5";
 	insns["EOR"] = "";
 	insns["LDC"] = "";
 	insns["LDC2"] = "";
 	insns["LDM_1"] = "";
 	insns["LDM_2"] = "";
 	insns["LDM_3"] = "";
-	insns["LDR"] = "";
+	insns["LDR"] = "cond:0-4:0;b01::X;adm2_leg0:17-20:5;b0::X;adm2_leg0:16-17:5;b1::X;adm2_leg0:12-16:5;Rg:0-4:4;adm2_leg0:0-12:5";
 	insns["LDRB"] = "";
 	insns["LDRD"] = "";
 	insns["LDRBT"] = "";
@@ -168,6 +168,10 @@ BEGIN {
 	forms["S"] = 2;
 	forms["Rg"] = 3;
 	forms["cond"] = 4;
+	forms["imm"] = 5;
+	forms["adm2_leg0"] = 6;
+	forms["adm2_leg1"] = 7;
+	forms["adm2_leg2"] = 8;
 	conds["EQ"] = "0000";
 	conds["NE"] = "0001";
 	conds["CS"] = "0010";
@@ -211,11 +215,30 @@ BEGIN {
 	binHex["1101"] = "d";
 	binHex["1110"] = "e";
 	binHex["1111"] = "f";
+	regAliases["SB"] = 9;
+	regAliases["TR"] = 9;
+	regAliases["FP"] = 11;
+	regAliases["IP"] = 12;
+	regAliases["SP"] = 13;
+	regAliases["LR"] = 14;
+	regAliases["PC"] = 15;
+	regAliases["A1"] = 0;
+	regAliases["A2"] = 1;
+	regAliases["A3"] = 2;
+	regAliases["A4"] = 3;
+	regAliases["V1"] = 4;
+	regAliases["V2"] = 5;
+	regAliases["V3"] = 6;
+	regAliases["V4"] = 7;
+	regAliases["V5"] = 8;
+	regAliases["V6"] = 9;
+	regAliases["V7"] = 10;
+	regAliases["V8"] = 11;
 	insnEndianness = 0;
 	counter = 0;#TODO Allow specification of the starting address
 }
 NF {
-	for (a = $1; a; a = substr(a, 1, length(a) - 1)) {
+	for (a = $1; a; a = substr(a, 1, length(a) - 1)) {#TODO B and T
 		if (asUpper(a) in insns) {
 			break;
 		}
@@ -460,9 +483,103 @@ function parseForm(insn, fieldDef) {
 		}
 		return "1110";
 	}
-	else {
-		exit(108);
+	else if (n1 == 5) {
+		return asBin(getImm(txt, 1), 32);
 	}
+	else if ((n1 >= 6) && (n1 < 9)) {
+		if (substr(txt, 1, 1) != "[") {
+			exit(1);
+		}
+		$0 = substr(txt, 2);
+		$1 = $1;#TODO Is this necessary?
+		txt = $0;
+		n2 = asBin(getReg(txt, 1), 4);
+		if (!(n3 = match(txt, ","))) {
+			if (n1 == 7) {
+				return "0010" n2 "000000000000";
+			}
+			return "0110" n2 "000000000000";
+		}
+		$0 = substr(txt, n3 + 1);
+		$1 = $1;#TODO Is this necessary?
+		txt = $0;
+		if (substr(txt, 1, 1) == "#") {
+			if ((n4 = substr(txt, 2, 1)) == "+") {
+				nNeg = "1";
+				nImmPl = 3;
+			}
+			else if (n4 == "-") {
+				nNeg = "0";
+				nImmPl = 3;
+			}
+			else {
+				nNeg = "1";
+				nImmPl = 2;
+			}
+			n4 = asBin(getImm(txt, nImmPl), 12);
+			nForm = 0;
+		}
+		else {
+			if ((n4 = substr(txt, 1, 1)) == "+") {
+				nNeg = "1";
+				txt = substr(txt, 2);
+			}
+			else if (n4 == "-") {
+				nNeg = "0";
+				txt = substr(txt, 2);
+			}
+			else {
+				nNeg = "1";
+			}
+			n4 = asBin(getReg(txt, 1), 4);
+			if (n5 = match(txt, ",")) {
+				$0 = substr(txt, n5 + 1);
+				$1 = $1;#TODO is this necessary?
+				txt = $0;
+				if ((n5 = asUpper(substr(txt, 1, 3))) in shifters) {
+					if (!(substr(txt, 5, 1) == "#")) {
+						exit(1);
+					}
+					nScl = asBin(getImm(txt, 6), 5) asBin(shifters[n5], 2);
+				}
+				else if (n5 == "RRX") {
+					nScl = "0000011";
+				}
+				else {
+					exit(1);
+				}
+				nForm = 2;
+			}
+			else {
+				nForm = 1;
+			}
+		}
+		if (match(txt, "\\]")) {
+			if (match(txt, "!")) {
+				nMode = 1;
+			}
+			else {
+				nMode = 0;
+			}
+		}
+		else {
+			nMode = 2;
+		}
+		if ((n1 == 7) && (nMode != 2)) {
+			exit(1);
+		}
+		if ((n1 == 8) && (nMode != 0)) {
+			exit(1);
+		}
+		if (nForm == 0) {
+			return "0" ((nMode == 2) ? "0" : "1") nNeg ((nMode == 1) ? "1" : "0") n2 n4;
+		}
+		if (nForm == 1) {
+			return "1" ((nMode == 2) ? "0" : "1") nNeg ((nMode == 1) ? "1" : "0") n2 "00000000" n4;
+		}
+		return "1" ((nMode == 2) ? "0" : "1") nNeg ((nMode == 1) ? "1" : "0") n2 nScl "0" n4;
+	}
+	exit(108);
 }
 function asUpper(s) {
 	return toupper(s);
@@ -529,6 +646,12 @@ function getImm(strImm, place) {
 }
 function getReg(strReg, place) {
 		if (!(asUpper(substr(strReg, place, 1)) == "R")) {
+			if (place < length(strReg)) {
+				if ((strReg = asUpper(substr(strReg, place, 2))) in regAliases) {
+					return regAliases[strReg];
+				}
+				exit(1);
+			}
 			exit(1);
 		}
 		if ((reg2 = getImm(txt, place + 1)) < 0) {
