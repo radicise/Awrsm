@@ -3,36 +3,35 @@ BEGIN {
 	insns["ADC"] = "cond:0-4:0;b00::X;shifter_operand:12-13:6;b0101::X;S:0-1:1;Rg:0-4:5;Rg:0-4:4;shifter_operand:0-12:6";
 	insns["ADD"] = "cond:0-4:0;b00::X;shifter_operand:12-13:6;b0100::X;S:0-1:1;Rg:0-4:5;Rg:0-4:4;shifter_operand:0-12:6";
 	insns["AND"] = "cond:0-4:0;b00::X;shifter_operand:12-13:6;b0000::X;S:0-1:1;Rg:0-4:5;Rg:0-4:4;shifter_operand:0-12:6";
-	insns["B"] = "";
+	insns["B"] = "";#TODO Prevent confusion between setting of the L bit and the presence of condition mnemonics that start with L when the L bit is not set
 	insns["BIC"] = "cond:0-4:0;b00::X;shifter_operand:12-13:6;b1110::X;S:0-1:1;Rg:0-4:5;Rg:0-4:4;shifter_operand:0-12:6";
-	insns["BKPT"] = "b111000010010::X;imm:4-16:4;b0111::X;imm:0-4:4";
-	insns["BL"] = "";
+	insns["BKPT"] = "b111000010010::X;imm32:4-16:4;b0111::X;imm32:0-4:4";
 	insns["BLX_1"] = "";#TODO fix
 	insns["BLX_2"] = "";#TODO fix
 	insns["BX"] = "cond:0-4:0;b000100101111111111110001::X;Rg:0-4:4";
 	insns["BXJ"] = "cond:0-4:0;b000100101111111111110010::X;Rg:0-4:4";
 	insns["CDP"] = "";
 	insns["CDP2"] = "";
-	insns["CLZ"] = "";
-	insns["CMN"] = "";
-	insns["CMP"] = "";
+	insns["CLZ"] = "cond:0-4:0;b000101101111::X;Rg:0-4:4;b11110001::X;Rg:0-4:5";
+	insns["CMN"] = "cond:0-4:0;b00::X;shifter_operand:12-13:5;b10111::X;Rg:0-4:4;b0000::X;shifter_operand:0-12:5";
+	insns["CMP"] = "cond:0-4:0;b00::X;shifter_operand:12-13:5;b10101::X;Rg:0-4:4;b0000::X;shifter_operand:0-12:5";
 	insns["CPS"] = "";
 	insns["CPY"] = "cond:0-4:0;b000110100000::X;Rg:0-4:4;b00000000::X;Rg:0-4:5";
 	insns["EOR"] = "";
 	insns["LDC"] = "";
 	insns["LDC2"] = "";
-	insns["LDM_1"] = "";
-	insns["LDM_2"] = "";
-	insns["LDM_3"] = "";
+	insns["LDM_1"] = "";#TODO fix
+	insns["LDM_2"] = "";#TODO fix
+	insns["LDM_3"] = "";#TODO fix
 	insns["LDR"] = "cond:0-4:0;b01::X;adm2_leg0:17-20:5;b0::X;adm2_leg0:16-17:5;b1::X;adm2_leg0:12-16:5;Rg:0-4:4;adm2_leg0:0-12:5";
-	insns["LDRB"] = "";
-	insns["LDRD"] = "";
-	insns["LDRBT"] = "";
+	insns["LDRB"] = "";#TODO (nr 1)
+	insns["LDRD"] = "";#TODO (nr 1)
+	insns["LDRBT"] = "";#TODO (nr 1)
 	insns["LDREX"] = "";
-	insns["LDRH"] = "";
-	insns["LDRSB"] = "";
-	insns["LDRSH"] = "";
-	insns["LDRT"] = "";
+	insns["LDRH"] = "";#TODO Support mnemonic continuing at the end ("nr 1")
+	insns["LDRSB"] = "";#(nr 1)
+	insns["LDRSH"] = "";#(nr 1)
+	insns["LDRT"] = "";#(nr 1)
 	insns["MCR"] = "";
 	insns["MCR2"] = "";
 	insns["MCRR"] = "";
@@ -61,11 +60,11 @@ BEGIN {
 	insns["QSUB16"] = "";
 	insns["QSUB8"] = "";
 	insns["QSUBADDX"] = "";
-	insns["REV"] = "";
-	insns["REV16"] = "";
-	insns["REVSH"] = "";
+	insns["REV"] = "cond:0-4:0;b011010111111::X;Rg:0-4:4;b11110011::X;Rg:0-4:5";
+	insns["REV16"] = "cond:0-4:0;b011010111111::X;Rg:0-4:4;b11111011::X;Rg:0-4:5";
+	insns["REVSH"] = "cond:0-4:0;b011011111111::X;Rg:0-4:4;b11111011::X;Rg:0-4:5";
 	insns["RFE"] = "";
-	insns["RSB"] = "";
+	insns["RSB"] = "cond:0-4:0;b00::X;shifter_operand:12-13:6;b0011::X;S:0-1:1;Rg:0-4:5;Rg:0-4:4;shifter_operand:0-12:6";
 	insns["RSC"] = "";
 	insns["SADD16"] = "";
 	insns["SADD8"] = "";
@@ -115,19 +114,19 @@ BEGIN {
 	insns["SSUBADDX"] = "";
 	insns["STC"] = "";
 	insns["STC2"] = "";
-	insns["STM_1"] = "";
-	insns["STM_2"] = "";
-	insns["STR"] = "";
-	insns["STRB"] = "";
-	insns["STRBT"] = "";
-	insns["STRD"] = "";
+	insns["STM_1"] = "";#TODO fix
+	insns["STM_2"] = "";#TODO fix
+	insns["STR"] = "cond:0-4:0;b01::X;adm2_leg0:17-20:5;b0::X;adm2_leg0:16-17:5;b0::X;adm2_leg0:12-16:5;Rg:0-4:4;adm2_leg0:0-12:5";
+	insns["STRB"] = "";#TODO (nr 1)
+	insns["STRBT"] = "";#TODO (nr 1)
+	insns["STRD"] = "";#TODO (nr 1)
 	insns["STREX"] = "";
-	insns["STRH"] = "";
-	insns["STRT"] = "";
-	insns["SUB"] = "";
-	insns["SWI"] = "";
+	insns["STRH"] = "";#TODO (nr 1)
+	insns["STRT"] = "";#TODO (nr 1)
+	insns["SUB"] = "cond:0-4:0;b00::X;shifter_operand:12-13:6;b0010::X;S:0-1:1;Rg:0-4:5;Rg:0-4:4;shifter_operand:0-12:6";
+	insns["SWI"] = "cond:0-4:0;b1111::X;imm32:0-24:4";
 	insns["SWP"] = "";
-	insns["SWPB"] = "";
+	insns["SWPB"] = "";#TODO (nr 1)
 	insns["SXTAB"] = "";
 	insns["SXTAB16"] = "";
 	insns["SXTAH"] = "";
@@ -168,7 +167,7 @@ BEGIN {
 	forms["S"] = 2;
 	forms["Rg"] = 3;
 	forms["cond"] = 4;
-	forms["imm"] = 5;
+	forms["imm32"] = 5;
 	forms["adm2_leg0"] = 6;
 	forms["adm2_leg1"] = 7;
 	forms["adm2_leg2"] = 8;
@@ -238,17 +237,19 @@ BEGIN {
 	counter = 0;#TODO Allow specification of the starting address
 }
 NF {
+	currentInsn = $0;
+	$1 = $1;
 	for (a = $1; a; a = substr(a, 1, length(a) - 1)) {#TODO B and T
 		if (asUpper(a) in insns) {
 			break;
 		}
 	}
 	if (!a) {
-		exit(1);
+		fail("Unknown instruction");
 	}
 	a = asUpper(a);
 	if (!(insns[a])) {
-		exit(1);
+		fail("Instruction support is not implemented");
 	}
 	split(insns[a], b, ";");
 	form = substr($0, length(a) + 1);
@@ -276,7 +277,7 @@ NF {
 					b[pos] = substr(e[lex], 2, length(e[lex]) - 7);
 				}
 				else {
-					exit(105);
+					raise(105);
 				}
 			}
 			break;
@@ -295,12 +296,12 @@ NF {
 		lex = substr(h[pos], length(h[pos]), 1);
 		split(h[pos], y, ":");
 		if (!(3 in y)) {
-			exit(101);
+			raise(101);
 		}
 		t1 = y[2];
 		split(t1, y, "-");
 		if (!(2 in y)) {
-			exit(102);
+			raise(102);
 		}
 		seq = b[substr(e[lex], length(e[lex]) - 1, 2) - 10];
 		b[pos] = substr(seq, length(seq) + 1 - (y[2] - y[1]) - y[1], y[2] - y[1]);
@@ -312,12 +313,12 @@ NF {
 		seq = b[pos = (substr(e[lex], length(e[lex]) - 1, 2) - 10)];
 		split(e[lex], y, ":");
 		if (!(4 in y)) {
-			exit(103);
+			raise(103);
 		}
 		t1 = y[2];
 		split(t1, y, "-");
 		if (!(2 in y)) {
-			exit(104);
+			raise(104);
 		}
 		b[pos] = substr(seq, length(seq) + 1 - (y[2] - y[1]) - y[1], y[2] - y[1]);
 	}
@@ -327,7 +328,7 @@ NF {
 		c = c b[pos];
 	}
 	if (length(c) % 8) {
-		exit(109);
+		raise(109);
 	}
 	insnSiz = length(c) / 8;
 	d = "";
@@ -349,14 +350,14 @@ NF {
 function parseForm(insn, fieldDef) {
 	split(fieldDef, p1, ":");
 	if (!(4 in p1)) {
-		exit(106);
+		raise(106);
 	}
 	if (p1[3] >= 4) {
 		FS = ","#TODO Account for commas in addressing forms
 		$0 = form;
 		$1 = $1;#TODO Is this necessary?
 		if (NF < (p1[3] - 3)) {
-			exit(1);
+			fail("The instruction was supplied in an insufficient amount of arguments");
 		}
 		if ((p1[3] - 3) == lexNum) {
 			n1 = $(lexNum);
@@ -368,7 +369,7 @@ function parseForm(insn, fieldDef) {
 			n1 = $(p1[3] - 3);
 		}
 		else {
-			exit(107);
+			raise(107);
 		}
 		FS = " ";
 		$0 = n1;
@@ -376,7 +377,7 @@ function parseForm(insn, fieldDef) {
 		txt = $0;
 	}
 	if (!(p1[1] in forms)) {
-		exit(107);
+		raise(107);
 	}
 	n1 = forms[p1[1]];
 	if (n1 == 1) {
@@ -397,7 +398,7 @@ function parseForm(insn, fieldDef) {
 			n4 = (32 - n2) - n3;
 			if (n4 == 8) {
 				if (n3 % 2) {
-					exit(1);
+					fail("The provided immediate value is not representable using Addressing Mode 1");
 				}
 				nRot = ((n2 / 2) + 4) % 16;
 				nPatt = substr(nImm, n2 + 1, 8);
@@ -427,7 +428,7 @@ function parseForm(insn, fieldDef) {
 				n4 = (32 - n2) - n3;
 				if (n4 == 8) {
 					if (n3 % 2) {
-						exit(1);
+						fail("The provided immediate value is not representable using Addressing Mode 1");
 					}
 					nRot = ((n2 / 2) + 12) % 16;
 					nPatt = substr(nImt, n2 + 1, 8);
@@ -441,7 +442,7 @@ function parseForm(insn, fieldDef) {
 					nPatt = substr(nImt, n2 + 1, 8);
 				}
 				else {
-					exit(1);
+					fail("The provided immediate value is not representable using Addressing Mode 1");
 				}
 			}
 			return "1" asBin(nRot, 4) nPatt;
@@ -462,7 +463,7 @@ function parseForm(insn, fieldDef) {
 				}
 				return "0" asBin(getReg(txt, 1), 4) "0" asBin(shifters[n3], 2) "1" n2;
 			}
-			exit(1);
+			fail("Specified shift does not exist or is not applicable");
 		}
 		return "000000000" n2;
 	}
@@ -488,7 +489,7 @@ function parseForm(insn, fieldDef) {
 	}
 	else if ((n1 >= 6) && (n1 < 9)) {
 		if (substr(txt, 1, 1) != "[") {
-			exit(1);
+			fail("Invalid syntax for Addressing Mode 2");
 		}
 		$0 = substr(txt, 2);
 		$1 = $1;#TODO Is this necessary?
@@ -538,7 +539,7 @@ function parseForm(insn, fieldDef) {
 				txt = $0;
 				if ((n5 = asUpper(substr(txt, 1, 3))) in shifters) {
 					if (!(substr(txt, 5, 1) == "#")) {
-						exit(1);
+						fail("Invalid notation for shift value");
 					}
 					nScl = asBin(getImm(txt, 6), 5) asBin(shifters[n5], 2);
 				}
@@ -546,7 +547,7 @@ function parseForm(insn, fieldDef) {
 					nScl = "0000011";
 				}
 				else {
-					exit(1);
+					fail("Specified shift does not exist or is not applicable");
 				}
 				nForm = 2;
 			}
@@ -566,10 +567,10 @@ function parseForm(insn, fieldDef) {
 			nMode = 2;
 		}
 		if ((n1 == 7) && (nMode != 2)) {
-			exit(1);
+			fail("Only post-indexed addressing is available for this instruction's use of Addressing Mode 2");
 		}
 		if ((n1 == 8) && (nMode != 0)) {
-			exit(1);
+			fail("Only offset addressing is available for this instruction's use of Addressing Mode 2");
 		}
 		if (nForm == 0) {
 			return "0" ((nMode == 2) ? "0" : "1") nNeg ((nMode == 1) ? "1" : "0") n2 n4;
@@ -579,7 +580,7 @@ function parseForm(insn, fieldDef) {
 		}
 		return "1" ((nMode == 2) ? "0" : "1") nNeg ((nMode == 1) ? "1" : "0") n2 nScl "0" n4;
 	}
-	exit(108);
+	raise(108);
 }
 function asUpper(s) {
 	return toupper(s);
@@ -642,23 +643,35 @@ function getImm(strImm, place) {
 		}
 		return (immNeg ? (-immRes) : (immRes));
 	}
-	exit(1);
+	fail("Invalid notation for integer literal");
 }
-function getReg(strReg, place) {
-		if (!(asUpper(substr(strReg, place, 1)) == "R")) {
+function getReg(strReg, place) {# Prevent confusion between synonym notations and special notations which start with the letter `R' and register naming by number if any such synonym or special notation is introduced
+		if (asUpper(substr(strReg, place, 1)) != "R") {
 			if (place < length(strReg)) {
 				if ((strReg = asUpper(substr(strReg, place, 2))) in regAliases) {
 					return regAliases[strReg];
 				}
-				exit(1);
+				fail("Invalid notation for register");
 			}
-			exit(1);
+			fail("Invalid notation for register");
 		}
 		if ((reg2 = getImm(txt, place + 1)) < 0) {
-			exit(1);
+			fail("Invalid register number");
 		}
 		if (reg2 >= 16) {
-			exit(1);
+			fail("Invalid register number");
 		}
 		return reg2;
+}
+function fail(strFail) {
+	print("An error occurred during assembly:");
+	if (strFail) {
+		print(strFail);
+	}
+	print("The error occurred during processing of the following line of input:");
+	print(currentInsn);
+	exit(1);
+}
+function raise(numRaise) {
+	fail("Internal error, error number " numRaise);
 }
